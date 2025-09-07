@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { RealtimeAgent } from '@openai/agents/realtime';
 
 dotenv.config();
 
@@ -40,18 +41,27 @@ export function makeHeaders(contentType) {
   return obj;
 }
 
-export function makeSession(language = 'hindi') {
+export function makeAgent(language = 'hindi') {
   // Validate language
   const selectedLanguage = AVAILABLE_LANGUAGES.includes(language) ? language : 'hindi';
   const instructions = loadPrompt(selectedLanguage);
-  
+
+  return new RealtimeAgent({
+    name: 'voice-agent',
+    instructions,
+    voice: VOICE,
+  });
+}
+
+export function makeSession(language = 'hindi') {
+  const agent = makeAgent(language);
   return {
-    type: "realtime",
+    type: 'realtime',
     model: MODEL,
-    instructions: instructions,
+    instructions: agent.instructions,
     audio: {
-      input: { noise_reduction: { type: "near_field" } },
-      output: { voice: VOICE },
+      input: { noise_reduction: { type: 'near_field' } },
+      output: { voice: agent.voice },
     },
   };
 }
